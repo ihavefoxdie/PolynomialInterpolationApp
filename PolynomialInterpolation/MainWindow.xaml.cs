@@ -10,13 +10,12 @@ using System.Windows;
 using xFunc.Maths;
 using xFunc.Maths.Expressions;
 using xFunc.Maths.Expressions.Parameters;
-using xFunc.Maths.Results;
-using static xFunc.Maths.Results.Result;
 
 namespace PolynomialInterpolation
 {
     public partial class MainWindow : Window
     {
+        #region Properties
         public PlotModel MyModel { get; private set; }
         public List<DataPoint> Points { get; private set; }
         private static readonly Regex _regexAny = new("[^0-9.-]+");
@@ -25,25 +24,39 @@ namespace PolynomialInterpolation
         public uint NumberOfPoints { get; private set; } = 20;
         public double X0 { get; private set; } = 0.1;
         public double StepSize { get; private set; } = 0.1;
+        public double Error { get; private set; } = 0;
         public uint NumberOfInterpolatedPoints { get; private set; } = 100;
+        #endregion
 
 
         public MainWindow()
         {
             InitializeComponent();
-
             MyModel = new PlotModel();
-            //MyModel.InvalidatePlot(true);
         }
 
+
+        #region TextBox typing restricting
         private static bool IsTextAllowed(string text)
         {
             return _regexAny.IsMatch(text);
         }
+
         private static bool IsTextAllowedUnsigned(string text)
         {
             return _regexUnsigned.IsMatch(text);
         }
+
+        private void NumberVerifier(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            e.Handled = IsTextAllowed(e.Text);
+        }
+
+        private void NumberVerifierUnsigned(object sender, System.Windows.Input.TextCompositionEventArgs e)
+        {
+            e.Handled = IsTextAllowedUnsigned(e.Text);
+        }
+
         private void TextBoxPasting(object sender, DataObjectPastingEventArgs e)
         {
             if (e.DataObject.GetDataPresent(typeof(String)))
@@ -59,12 +72,14 @@ namespace PolynomialInterpolation
                 e.CancelCommand();
             }
         }
+        #endregion
+
 
         private static void WritePoints(double[][] arr)
         {
             string path = "initPoints.txt";
             File.Delete(path);
-            
+
             for (int i = 0; i < arr.Length; i++)
             {
                 File.AppendAllText(path, arr[i][0] + " " + arr[i][1] + "\n");
@@ -73,25 +88,20 @@ namespace PolynomialInterpolation
 
         private static List<DataPoint> ParsePoints(string path)
         {
-            List<DataPoint> points = new List<DataPoint>();
+            List<DataPoint> points = new();
             List<String> data = new();
-            String line;
+            String? line;
             try
             {
-                //Pass the file path and file name to the StreamReader constructor
-                StreamReader sr = new StreamReader(path);
-                //Read the first line of text
+                StreamReader sr = new(path);
                 line = sr.ReadLine();
-                //Continue to read until you reach end of file
+
                 while (line != null)
                 {
                     data.Add(line);
-                    //write the line to console window
                     Console.WriteLine(line);
-                    //Read the next line
                     line = sr.ReadLine();
                 }
-                //close the file
                 sr.Close();
                 Console.ReadLine();
             }
@@ -113,16 +123,9 @@ namespace PolynomialInterpolation
             return points;
         }
 
-        private void NumberVerifier(object sender, System.Windows.Input.TextCompositionEventArgs e)
-        {
-            e.Handled = IsTextAllowed(e.Text);
-        }
-        private void NumberVerifierUnsigned(object sender, System.Windows.Input.TextCompositionEventArgs e)
-        {
-            e.Handled = IsTextAllowedUnsigned(e.Text);
-        }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        #region Buttons
+        private void MathExpressoinInput(object sender, RoutedEventArgs e)
         {
             MathExpression = MathExpressionText.Text;
         }
@@ -150,47 +153,48 @@ namespace PolynomialInterpolation
         {
             NumberOfInterpolatedPoints = Convert.ToUInt32(InterpolatedPointsNumberText.Text);
         }
+        #endregion
 
-        private void Proceed(object sender, RoutedEventArgs e)
+
+        private static double Lagrange(double[] pointsX, double[] pointsY, double x)
         {
-            MyModel.InvalidatePlot(true);
-            MyModel.Series.Clear();
+            int size = pointsX.Length;
+            double interpolatedY = 0.0;
+
+            for (int i = 0; i < size; i++)
+            {
+                double u = 1.0;
+
+                for (int j = 0; j < size; j++)
+                {
+                    if (i != j)
+                    {
+                        u = (x - pointsX[j]) / (pointsX[i] - pointsX[j]) * u;
+                    }
+                }
+                interpolatedY += (u * pointsY[i]);
+            }
+
+            return interpolatedY;
+        }
+
+        private double CalculateFunction(double x)
+        {
             Processor proc = new();
             var exp = proc.Parse(MathExpression);
-            
-            Func<double, double> powFunction = (x) =>
-            {
-                var parameters = new ExpressionParameters
+
+            var parameters = new ExpressionParameters
                 {
                     new Parameter("x", x)
                 };
-                NumberValue a = (NumberValue)exp.Execute(parameters);
-                
-                //var result = (Result)a;
-                return a.Number;
-            };
 
-            MyModel.Series.Add(new FunctionSeries(powFunction, X0, NumberOfPoints, StepSize, MathExpression) { StrokeThickness = 10f, Color = OxyColor.FromRgb(255, 200, 200) });
-            double[][] arr = new double[NumberOfPoints][];
+            NumberValue a = (NumberValue)exp.Execute(parameters);
 
-            double x = X0;
-            for (int i = 0; i < arr.Length; i++)
-            {
-                arr[i] = new double[2];
-                var parameters = new ExpressionParameters
-                {
-                    new Parameter("x", x)
-                };
-                NumberValue a = (NumberValue)exp.Execute(parameters);
-                arr[i][0] = x;
-                arr[i][1] = a.Number;
-                x += StepSize;
-            }
-            WritePoints(arr);
-            LineSeries interpolatedFunction = new();
-            interpolatedFunction.Title = "interpolated";
-            interpolatedFunction.Color = OxyColor.FromRgb(200, 10, 10);
+            return a.Number;
+        }
 
+        private void MakeCalculations()
+        {
             Process process = new();
             process.StartInfo.FileName = "lagrange_interpolating_polynomial.exe";
             process.StartInfo.Arguments = NumberOfPoints.ToString() + " " + X0.ToString() + " " + StepSize.ToString() + " " + NumberOfInterpolatedPoints.ToString();
@@ -199,11 +203,90 @@ namespace PolynomialInterpolation
             process.StartInfo.CreateNoWindow = true;
             process.Start();
             process.WaitForExit();
+        }
+
+        private void CalculateError()
+        {
+            double error = 0;
+            for (int i = 0; i < Points.Count; i++)
+            {
+                double n = Math.Abs(CalculateFunction(Points[i].X) - Points[i].Y);
+                if (error < n)
+                {
+                    error = n;
+                }
+            }
+
+            Error = error;
+            ErrorLabel.Content = "ε = " + Error.ToString("e3", CultureInfo.InvariantCulture);
+        }
+
+        private void Proceed(object sender, RoutedEventArgs e)
+        {
+            MyModel.InvalidatePlot(true);
+            MyModel.Series.Clear();
+
+
+            MyModel.Series.Add(new FunctionSeries(CalculateFunction, X0, NumberOfPoints * StepSize, StepSize, MathExpression) { StrokeThickness = 10f, Color = OxyColor.FromRgb(255, 200, 200) });
+            double[][] arr = new double[NumberOfPoints][];
+
+
+            double x = X0;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                arr[i] = new double[2];
+                arr[i][0] = x;
+                arr[i][1] = CalculateFunction(x);
+                x += StepSize;
+            }
+            WritePoints(arr);
+
+
+            LineSeries interpolatedFunction = new()
+            {
+                Title = "interpolated",
+                Color = OxyColor.FromRgb(10, 200, 10)
+            };
+
+            /*double[] pointsY = new double[NumberOfPoints];
+            double[] pointsX = new double[NumberOfPoints];
+
+            for (int i = 0; i < NumberOfPoints; i++)
+            {
+                pointsX[i] = i * StepSize + X0;
+            }
+
+            double intStep = Math.Round((pointsX[pointsX.Length - 1] - pointsX[0]) / NumberOfInterpolatedPoints, 5);
+
+            for (int i = 0; i < NumberOfPoints; i++)
+            {
+                pointsY[i] = Math.Pow(pointsX[i], -(1.0 / 2.0));
+            }
+
+            Points = new();
+
+            for (int i = 0; i < NumberOfInterpolatedPoints; i++)
+            {
+                Points.Add(new DataPoint(i * intStep + X0, Lagrange(pointsX, pointsY, i * intStep + X0)));
+            }*/
+
+            try
+            {
+                MakeCalculations();
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return;
+            }
 
             Points = ParsePoints("points.txt");
             File.Delete("points.txt");
             Points.ForEach((x => { interpolatedFunction.Points.Add(x); }));
             MyModel.Series.Add(interpolatedFunction);
+
+            CalculateError();
+
             MyModel.InvalidatePlot(true);
         }
     }
