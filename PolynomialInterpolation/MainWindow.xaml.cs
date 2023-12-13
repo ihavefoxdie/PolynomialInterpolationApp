@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows;
 using xFunc.Maths;
 using xFunc.Maths.Expressions;
@@ -33,6 +34,7 @@ namespace PolynomialInterpolation
         {
             InitializeComponent();
             MyModel = new PlotModel();
+            Points = new();
         }
 
 
@@ -89,7 +91,6 @@ namespace PolynomialInterpolation
         private static List<DataPoint> ParsePoints(string path)
         {
             List<DataPoint> points = new();
-            List<String> data = new();
             String? line;
             try
             {
@@ -98,8 +99,8 @@ namespace PolynomialInterpolation
 
                 while (line != null)
                 {
-                    data.Add(line);
-                    Console.WriteLine(line);
+                    String[] arr = line.Split(" ");
+                    points.Add(new DataPoint(double.Parse(arr[0], NumberStyles.Float, CultureInfo.InvariantCulture), double.Parse(arr[1], CultureInfo.InvariantCulture)));
                     line = sr.ReadLine();
                 }
                 sr.Close();
@@ -112,12 +113,6 @@ namespace PolynomialInterpolation
             finally
             {
                 Console.WriteLine("Executing finally block.");
-            }
-
-            for (int i = 0; i < data.Count; i++)
-            {
-                String[] arr = data[i].Split(" ");
-                points.Add(new DataPoint(double.Parse(arr[0], NumberStyles.Float, CultureInfo.InvariantCulture), double.Parse(arr[1], CultureInfo.InvariantCulture)));
             }
 
             return points;
@@ -195,14 +190,18 @@ namespace PolynomialInterpolation
 
         private void MakeCalculations()
         {
-            Process process = new();
-            process.StartInfo.FileName = "lagrange_interpolating_polynomial.exe";
-            process.StartInfo.Arguments = NumberOfPoints.ToString() + " " + X0.ToString() + " " + StepSize.ToString() + " " + NumberOfInterpolatedPoints.ToString();
-            process.StartInfo.RedirectStandardOutput = true;
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.CreateNoWindow = true;
-            process.Start();
-            process.WaitForExit();
+            using (Process process = new())
+            {
+                process.StartInfo.FileName = "lagrange_interpolating_polynomial.exe";
+                process.StartInfo.Arguments = NumberOfPoints.ToString() + " " + X0.ToString() + " " + StepSize.ToString() + " " + NumberOfInterpolatedPoints.ToString();
+                process.StartInfo.RedirectStandardOutput = false;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.CreateNoWindow = true;
+                process.Start();
+                process.WaitForExit(5000);
+                process.Close();
+                process.Dispose();
+            }
         }
 
         private void CalculateError()
@@ -226,20 +225,44 @@ namespace PolynomialInterpolation
             MyModel.InvalidatePlot(true);
             MyModel.Series.Clear();
 
+            LineSeries originalFunction = new()
+            {
+                Title = "interpolated",
+                StrokeThickness = 10f,
+                Color = OxyColor.FromRgb(255, 200, 200)
+            };
 
-            MyModel.Series.Add(new FunctionSeries(CalculateFunction, X0, NumberOfPoints * StepSize, StepSize, MathExpression) { StrokeThickness = 10f, Color = OxyColor.FromRgb(255, 200, 200) });
             double[][] arr = new double[NumberOfPoints][];
-
+            Task[] tasks = new Task[NumberOfPoints];
 
             double x = X0;
-            for (int i = 0; i < arr.Length; i++)
+            for (int i = 0; i < NumberOfPoints; i++)
             {
-                arr[i] = new double[2];
-                arr[i][0] = x;
-                arr[i][1] = CalculateFunction(x);
+                int n = i;
+                double tempX = x;
+                tasks[i] = new Task(() =>
+                {
+                    arr[n] = new double[2];
+                    arr[n][0] = tempX;
+                    arr[n][1] = CalculateFunction(tempX);
+                });
+                tasks[i].Start();
                 x += StepSize;
             }
+            Task.WaitAll(tasks);
             WritePoints(arr);
+
+            for (int i = 0; i < NumberOfPoints; i++)
+            {
+                originalFunction.Points.Add(new DataPoint(arr[i][0], arr[i][1]));
+            }
+
+            //Points.ForEach((x => { originalFunction.Points.Add(x); }));
+
+            MyModel.Series.Add(originalFunction);
+
+
+
 
 
             LineSeries interpolatedFunction = new()
@@ -274,14 +297,13 @@ namespace PolynomialInterpolation
             {
                 MakeCalculations();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 return;
             }
 
             Points = ParsePoints("points.txt");
-            File.Delete("points.txt");
             Points.ForEach((x => { interpolatedFunction.Points.Add(x); }));
             MyModel.Series.Add(interpolatedFunction);
 
