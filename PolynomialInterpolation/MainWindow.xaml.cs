@@ -2,9 +2,9 @@
 using OxyPlot.Series;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -19,15 +19,21 @@ namespace PolynomialInterpolation
         #region Properties
         public PlotModel MyModel { get; private set; }
         public List<DataPoint> Points { get; private set; }
-        private static readonly Regex _regexAny = new("[^0-9.-]+");
-        private static readonly Regex _regexUnsigned = new("[^0-9.]");
-        public string MathExpression { get; private set; } = "x^(-1/2)";
-        public uint NumberOfPoints { get; private set; } = 20;
+        private static readonly Regex _regexAny = new("[^0-9.,-]+");
+        private static readonly Regex _regexUnsigned = new("[^0-9.,]");
+        public string MathExp { get; private set; } = "x^(-1/2)";
+        private LineSeries MathExpPts { get; set; }
+        private LineSeries InterpMathExp { get; set; }
+        public uint NumOfPts { get; private set; } = 20;
         public double X0 { get; private set; } = 0.1;
         public double StepSize { get; private set; } = 0.1;
         public double Error { get; private set; } = 0;
-        public uint NumberOfInterpolatedPoints { get; private set; } = 100;
+        public uint NumOfInterpPts { get; private set; } = 100;
+        private Func<double[][], double, double> InterpolationMethod { get; set; }
         #endregion
+
+
+
 
 
         public MainWindow()
@@ -35,7 +41,27 @@ namespace PolynomialInterpolation
             InitializeComponent();
             MyModel = new PlotModel();
             Points = new();
+            InterpolationMethod = NewtonPolynomial;
+            IntMethod.Content = "Newton Polynomial";
+            MathExpPts = new()
+            {
+                Title = "original",
+                StrokeThickness = 10f,
+                Color = OxyColor.FromRgb(255, 200, 200)
+            };
+
+            InterpMathExp = new()
+            {
+                Title = "interpolated",
+                Color = OxyColor.FromRgb(10, 200, 10)
+            };
+
+            MyModel.Series.Add(MathExpPts);
+            MyModel.Series.Add(InterpMathExp);
         }
+
+
+
 
 
         #region TextBox typing restricting
@@ -77,83 +103,189 @@ namespace PolynomialInterpolation
         #endregion
 
 
-        private static void WritePoints(double[][] arr)
-        {
-            string path = "initPoints.txt";
-            File.Delete(path);
-
-            for (int i = 0; i < arr.Length; i++)
-            {
-                File.AppendAllText(path, arr[i][0] + " " + arr[i][1] + "\n");
-            }
-        }
-
-        private static List<DataPoint> ParsePoints(string path)
-        {
-            List<DataPoint> points = new();
-            String? line;
-            try
-            {
-                StreamReader sr = new(path);
-                line = sr.ReadLine();
-
-                while (line != null)
-                {
-                    String[] arr = line.Split(" ");
-                    points.Add(new DataPoint(double.Parse(arr[0], NumberStyles.Float, CultureInfo.InvariantCulture), double.Parse(arr[1], CultureInfo.InvariantCulture)));
-                    line = sr.ReadLine();
-                }
-                sr.Close();
-                Console.ReadLine();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Exception: " + e.Message);
-            }
-            finally
-            {
-                Console.WriteLine("Executing finally block.");
-            }
-
-            return points;
-        }
 
 
         #region Buttons
         private void MathExpressoinInput(object sender, RoutedEventArgs e)
         {
-            MathExpression = MathExpressionText.Text;
+            try
+            {
+                var exp = new Processor().Parse(MathExpressionText.Text);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Unable to set entered value:\n" + ex.Message);
+                MathExpressionText.Text = MathExp;
+            }
+            MathExp = MathExpressionText.Text;
         }
 
         private void NumOfPointsInput(object sender, RoutedEventArgs e)
         {
-            NumberOfPoints = Convert.ToUInt32(PointsNumberText.Text);
+            try
+            {
+                NumOfPts = Convert.ToUInt32(PointsNumberText.Text, CultureInfo.InvariantCulture);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Unable to set entered value:\n" + ex.Message);
+            }
         }
 
         private void X0Input(object sender, RoutedEventArgs e)
         {
-            X0 = Convert.ToDouble(X0Text.Text);
+            try
+            {
+                X0 = Convert.ToDouble(X0Text.Text, CultureInfo.InvariantCulture);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Unable to set entered value:\n" + ex.Message);
+            }
         }
 
         private void StepSizeInput(object sender, RoutedEventArgs e)
         {
-            double temp = Convert.ToDouble(StepSizeText.Text);
-            if (temp > 0)
+            try
             {
-                StepSize = temp;
+                double temp = Convert.ToDouble(StepSizeText.Text);
+                if (temp > 0)
+                {
+                    StepSize = temp;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Unable to set entered value:\n" + ex.Message);
             }
         }
 
+
+
+
+
+        private static double[] ChebyshevNodes(double a, double b, int numPoints)
+        {
+            double[] chebyshevNodes = new double[numPoints];
+            for (int i = 1; i <= numPoints; i++)
+            {
+                double theta = Math.PI * (2 * i - 1) / (numPoints * 2.0);
+                chebyshevNodes[i - 1] = (a + b + (b - a) * Math.Cos(theta)) * 0.5;
+            }
+
+            return chebyshevNodes;
+        }
+
+        private double ChebyshevInterpolation(double[][] points, double x)
+        {
+            double[] chebyshevNodes = ChebyshevNodes(points[0][0], points[points.GetLength(0) - 1][0], points.GetLength(0));
+            chebyshevNodes = chebyshevNodes.Reverse().ToArray();
+            double[] nodes = new double[chebyshevNodes.Length];
+            for (int i = 0; i < chebyshevNodes.Length; i++)
+            {
+                nodes[i] = CalculateFunction(chebyshevNodes[i]);
+            }
+            int size = chebyshevNodes.Length;
+            double result = 0.0;
+
+            for (int i = 0; i < size; i++)
+            {
+                double term = 1.0;
+                for (int j = 0; j < size; j++)
+                {
+                    if (j != i)
+                    {
+                        term *= (x - chebyshevNodes[j]) / (chebyshevNodes[i] - chebyshevNodes[j]);
+                    }
+                }
+                result += term * nodes[i];
+            }
+
+            return result;
+        }
+
+
+
+
+
+
+
         private void InterpolatedPointsNumberInput(object sender, RoutedEventArgs e)
         {
-            NumberOfInterpolatedPoints = Convert.ToUInt32(InterpolatedPointsNumberText.Text);
+            try
+            {
+                NumOfInterpPts = Convert.ToUInt32(InterpolatedPointsNumberText.Text, CultureInfo.InvariantCulture);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Unable to set entered value:\n" + ex.Message);
+            }
         }
         #endregion
 
-
-        private static double Lagrange(double[] pointsX, double[] pointsY, double x)
+        private static void DividedDifferences(double[][] points, double[,] differences, int numberOfPoints)
         {
-            int size = pointsX.Length;
+            for (int i = 1; i < numberOfPoints; i++)
+            {
+                for (int j = 0; j < numberOfPoints - i; j++)
+                {
+                    differences[j, i] = (differences[j, i - 1] - differences[j + 1, i - 1]) /
+                        (points[j][0] - points[i + j][0]);
+                }
+            }
+        }
+
+        private static double BasisPolynomialCalc(int currentPoint, double x, double[][] points)
+        {
+            double result = 1;
+            for (int i = 0; i < currentPoint; i++)
+            {
+                result *= (x - points[i][0]);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Newton interpolation polynomial method (divided differences).
+        /// </summary>
+        /// <param name="points">Array of points of some function.</param>
+        /// <param name="x">The value of X coordinate to find the Y coordinate with.</param>
+        /// <returns>Interpolated function value for given parameter X.</returns>
+        private static double NewtonPolynomial(double[][] points, double x)
+        {
+            int size = points.GetLength(0);
+            double[,] differences = new double[size, size];
+            for (int i = 0; i < size; i++)
+            {
+                differences[i, 0] = points[i][1];
+            }
+
+            DividedDifferences(points, differences, size);
+
+            double result = 0.0;
+            for (int i = 0; i < size; i++)
+            {
+                result += BasisPolynomialCalc(i, x, points) * differences[0, i];
+            }
+
+            Console.WriteLine("\nValue at " + (x) + " is "
+            + result);
+
+            return result;
+        }
+
+
+
+        /// <summary>
+        /// Lagrange interpolation polynomial method.
+        /// </summary>
+        /// <param name="points">Array of points of some function.</param>
+        /// <param name="x">The value of X coordinate to find the Y coordinate with.</param>
+        /// <returns>Interpolated function value for given parameter X.</returns>
+        private static double Lagrange(double[][] points, double x)
+        {
+            int size = points.GetLength(0);
             double interpolatedY = 0.0;
 
             for (int i = 0; i < size; i++)
@@ -164,19 +296,38 @@ namespace PolynomialInterpolation
                 {
                     if (i != j)
                     {
-                        u = (x - pointsX[j]) / (pointsX[i] - pointsX[j]) * u;
+                        u = (x - points[j][0]) / (points[i][0] - points[j][0]) * u;
                     }
                 }
-                interpolatedY += (u * pointsY[i]);
+                interpolatedY += (u * points[i][1]);
             }
 
             return interpolatedY;
         }
 
+
+
+
+
+        /// <summary>
+        /// Calculates Y for given X parameter.
+        /// </summary>
+        /// <param name="x">Function parameter.</param>
+        /// <returns>Function value for given parameter.</returns>
         private double CalculateFunction(double x)
         {
             Processor proc = new();
-            var exp = proc.Parse(MathExpression);
+            IExpression? exp = null;
+            try
+            {
+                exp = proc.Parse(MathExp);
+            }
+            catch (Exception ex)
+            {
+                MathExp = "x";
+                Console.WriteLine(ex.Message);
+                exp = proc.Parse(MathExp);
+            }
 
             var parameters = new ExpressionParameters
                 {
@@ -188,28 +339,19 @@ namespace PolynomialInterpolation
             return a.Number;
         }
 
-        private void MakeCalculations()
-        {
-            using (Process process = new())
-            {
-                process.StartInfo.FileName = "lagrange_interpolating_polynomial.exe";
-                process.StartInfo.Arguments = NumberOfPoints.ToString() + " " + X0.ToString() + " " + StepSize.ToString() + " " + NumberOfInterpolatedPoints.ToString();
-                process.StartInfo.RedirectStandardOutput = false;
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.CreateNoWindow = true;
-                process.Start();
-                process.WaitForExit(5000);
-                process.Close();
-                process.Dispose();
-            }
-        }
 
+
+
+
+        /// <summary>
+        /// Interpolation error calculation.
+        /// </summary>
         private void CalculateError()
         {
             double error = 0;
-            for (int i = 0; i < Points.Count; i++)
+            for (int i = 0; i < InterpMathExp.Points.Count; i++)
             {
-                double n = Math.Abs(CalculateFunction(Points[i].X) - Points[i].Y);
+                double n = Math.Abs(CalculateFunction(InterpMathExp.Points[i].X) - InterpMathExp.Points[i].Y);
                 if (error < n)
                 {
                     error = n;
@@ -217,99 +359,114 @@ namespace PolynomialInterpolation
             }
 
             Error = error;
-            ErrorLabel.Content = "ε = " + Error.ToString("e3", CultureInfo.InvariantCulture);
+            ErrorLabel.Content = "ε = " + Error;
         }
 
-        private void Proceed(object sender, RoutedEventArgs e)
+
+
+
+
+        /// <summary>
+        /// Calculate a fixed number points of the math expression.
+        /// </summary>
+        /// <returns>Array of calculated points.</returns>
+        private double[][] MathExpPtsCalc()
         {
-            MyModel.InvalidatePlot(true);
-            MyModel.Series.Clear();
-
-            LineSeries originalFunction = new()
-            {
-                Title = "interpolated",
-                StrokeThickness = 10f,
-                Color = OxyColor.FromRgb(255, 200, 200)
-            };
-
-            double[][] arr = new double[NumberOfPoints][];
-            Task[] tasks = new Task[NumberOfPoints];
-
+            double[][] originalArray = new double[NumOfPts][];
+            Task[] tasks = new Task[NumOfPts];
             double x = X0;
-            for (int i = 0; i < NumberOfPoints; i++)
+
+            for (int i = 0; i < NumOfPts; i++)
             {
                 int n = i;
                 double tempX = x;
                 tasks[i] = new Task(() =>
                 {
-                    arr[n] = new double[2];
-                    arr[n][0] = tempX;
-                    arr[n][1] = CalculateFunction(tempX);
+                    originalArray[n] = new double[2];
+                    originalArray[n][0] = tempX;
+                    originalArray[n][1] = CalculateFunction(tempX);
+
                 });
                 tasks[i].Start();
                 x += StepSize;
             }
             Task.WaitAll(tasks);
-            WritePoints(arr);
 
-            for (int i = 0; i < NumberOfPoints; i++)
+            for (int i = 0; i < NumOfPts; i++)
             {
-                originalFunction.Points.Add(new DataPoint(arr[i][0], arr[i][1]));
+                MathExpPts.Points.Add(new DataPoint(originalArray[i][0], originalArray[i][1]));
             }
 
-            //Points.ForEach((x => { originalFunction.Points.Add(x); }));
-
-            MyModel.Series.Add(originalFunction);
-
+            return originalArray;
+        }
 
 
 
 
-            LineSeries interpolatedFunction = new()
-            {
-                Title = "interpolated",
-                Color = OxyColor.FromRgb(10, 200, 10)
-            };
 
-            /*double[] pointsY = new double[NumberOfPoints];
-            double[] pointsX = new double[NumberOfPoints];
-
-            for (int i = 0; i < NumberOfPoints; i++)
-            {
-                pointsX[i] = i * StepSize + X0;
-            }
-
-            double intStep = Math.Round((pointsX[pointsX.Length - 1] - pointsX[0]) / NumberOfInterpolatedPoints, 5);
-
-            for (int i = 0; i < NumberOfPoints; i++)
-            {
-                pointsY[i] = Math.Pow(pointsX[i], -(1.0 / 2.0));
-            }
+        /// <summary>
+        /// Calculate a fixed number interpolated points from given array of points.
+        /// </summary>
+        /// <param name="originalArray">Array of points of some function</param>
+        private void InterpMathExpPtsCalc(double[][] originalArray)
+        {
+            double[][] interArr = new double[NumOfInterpPts][];
+            double interStep = (originalArray[originalArray.GetLength(0) - 1][0] - X0) / NumOfInterpPts;
 
             Points = new();
-
-            for (int i = 0; i < NumberOfInterpolatedPoints; i++)
+            Task[] tasks = new Task[NumOfInterpPts];
+            for (int i = 0; i < NumOfInterpPts; i++)
             {
-                Points.Add(new DataPoint(i * intStep + X0, Lagrange(pointsX, pointsY, i * intStep + X0)));
-            }*/
-
-            try
-            {
-                MakeCalculations();
+                int n = i;
+                tasks[i] = new Task(() =>
+                {
+                    interArr[n] = new double[2];
+                    interArr[n][0] = n * interStep + X0;
+                    interArr[n][1] = InterpolationMethod(originalArray, interArr[n][0]);
+                });
+                tasks[i].Start();
             }
-            catch (Exception ex)
+            Task.WaitAll(tasks);
+
+            for (int i = 0; i < NumOfInterpPts; i++)
             {
-                Console.WriteLine(ex.Message);
-                return;
+                InterpMathExp.Points.Add(new DataPoint(interArr[i][0], interArr[i][1]));
             }
+        }
 
-            Points = ParsePoints("points.txt");
-            Points.ForEach((x => { interpolatedFunction.Points.Add(x); }));
-            MyModel.Series.Add(interpolatedFunction);
 
+
+
+
+        private void Proceed(object sender, RoutedEventArgs e)
+        {
+            MathExpPts.Points.Clear();
+            InterpMathExp.Points.Clear();
+
+            InterpMathExpPtsCalc(MathExpPtsCalc());
             CalculateError();
 
             MyModel.InvalidatePlot(true);
+        }
+
+        private void Change(object sender, RoutedEventArgs e)
+        {
+            if (InterpolationMethod == Lagrange)
+            {
+                InterpolationMethod = NewtonPolynomial;
+                IntMethod.Content = "Newton Polynomial";
+            }
+            else if (InterpolationMethod == NewtonPolynomial)
+            {
+                InterpolationMethod = ChebyshevInterpolation;
+                IntMethod.Content = "Chebyshev nodes Lagrange";
+            }
+            else
+            {
+                InterpolationMethod = Lagrange;
+                IntMethod.Content = "Lagrange Polynomial";
+
+            }
         }
     }
 }
