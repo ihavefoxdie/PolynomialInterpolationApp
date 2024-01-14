@@ -7,18 +7,17 @@
         xmlns:oxy="http://oxyplot.org/wpf"
         mc:Ignorable="d"
         x:Name="Interpolation"
-        Title="Interpolation Polynomial" Height="800" Width="1280">
+        Title="Cauchy problem" Height="800" Width="1280">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
         <oxy:PlotView Model="{Binding Path=MyModel, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}"/>
-        
-        
+
+
         <Grid Margin="-30" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center">
             <Grid.RowDefinitions>
-                <RowDefinition/>
                 <RowDefinition/>
                 <RowDefinition/>
                 <RowDefinition/>
@@ -36,21 +35,18 @@
                 <ColumnDefinition/>
                 <ColumnDefinition/>
             </Grid.ColumnDefinitions>
-            
+
             <Label Padding="10" FontWeight="DemiBold" Grid.Row="0" Grid.Column="0" FontFamily="Montserrat" FontSize="15" Content="Math. expression"></Label>
             <Label Padding="10" FontWeight="DemiBold" Grid.Row="2" Grid.Column="0" FontFamily="Montserrat" FontSize="15" Content="Num. of points"></Label>
             <Label Padding="10" FontWeight="DemiBold" Grid.Row="4" Grid.Column="0" FontFamily="Montserrat" FontSize="15" Content="x0"></Label>
             <Label Padding="10" FontWeight="DemiBold" Grid.Row="6" Grid.Column="0" FontFamily="Montserrat" FontSize="15" Content="Step size"></Label>
-            <Label Padding="10" FontWeight="DemiBold" Grid.Row="8" Grid.Column="0" FontFamily="Montserrat" FontSize="15" Content="Number of inter. points"></Label>
-            <Label Padding="10" FontWeight="DemiBold" Grid.Row="11" Grid.Column="0" FontFamily="Montserrat" FontSize="15" x:Name="ErrorLabel" Content=""></Label>
-            <Label Padding="10" FontWeight="DemiBold" Grid.Row="12" Grid.Column="0" FontFamily="Montserrat" FontSize="15" x:Name="IntMethod" VerticalContentAlignment="Center" Content=""></Label>
+            <Label Padding="10" FontWeight="DemiBold" Grid.Row="8" Grid.Column="0" FontFamily="Montserrat" FontSize="15" Content="y(0)"></Label>
 
-
-            <TextBox x:Name="MathExpressionText" VerticalContentAlignment="Center" FontFamily="Inter" Text="x^(-1/2)" FontSize="30" Grid.Row="1"/>
-            <TextBox DataObject.Pasting="TextBoxPasting" PreviewTextInput="NumberVerifierUnsigned" x:Name="PointsNumberText" VerticalContentAlignment="Center" FontFamily="Inter" Text="20" FontSize="30" Grid.Row="3"/>
+            <TextBox x:Name="MathExpressionText" VerticalContentAlignment="Center" FontFamily="Inter" Text="sqrt(x) - y^2" FontSize="30" Grid.Row="1"/>
+            <TextBox DataObject.Pasting="TextBoxPasting" PreviewTextInput="NumberVerifierUnsigned" x:Name="PointsNumberText" VerticalContentAlignment="Center" FontFamily="Inter" Text="30" FontSize="30" Grid.Row="3"/>
             <TextBox DataObject.Pasting="TextBoxPasting" PreviewTextInput="NumberVerifier" x:Name="X0Text" VerticalContentAlignment="Center" FontFamily="Inter" Text="0.1" FontSize="30" Grid.Row="5"/>
             <TextBox DataObject.Pasting="TextBoxPasting" PreviewTextInput="NumberVerifierUnsigned" x:Name="StepSizeText" VerticalContentAlignment="Center" FontFamily="Inter" Text="0.1" FontSize="30" Grid.Row="7"/>
-            <TextBox DataObject.Pasting="TextBoxPasting" PreviewTextInput="NumberVerifierUnsigned" x:Name="InterpolatedPointsNumberText" VerticalContentAlignment="Center" FontFamily="Inter" Text="100" FontSize="30" Grid.Row="9"/>
+            <TextBox DataObject.Pasting="TextBoxPasting" PreviewTextInput="NumberVerifierUnsigned" x:Name="yOfZero" VerticalContentAlignment="Center" FontFamily="Inter" Text="2" FontSize="30" Grid.Row="9"/>
 
             <Button BorderThickness="0" Click="MathExpressoinInput" Margin="10" Padding="10" Grid.Row="1" Grid.Column="1" FontFamily="Montserrat" FontSize="15" Content="Set"></Button>
             <Button BorderThickness="0" Click="NumOfPointsInput" Margin="10" Padding="10" Grid.Row="3" Grid.Column="1" FontFamily="Montserrat" FontSize="15" Content="Set"></Button>
@@ -58,8 +54,6 @@
             <Button BorderThickness="0" Click="StepSizeInput" Margin="10" Padding="10" Grid.Row="7" Grid.Column="1" FontFamily="Montserrat" FontSize="15" Content="Set"></Button>
             <Button BorderThickness="0" Click="InterpolatedPointsNumberInput" Margin="10" Padding="10" Grid.Row="9" Grid.Column="1" FontFamily="Montserrat" FontSize="15" Content="Set"></Button>
             <Button BorderThickness="0" Click="Proceed" Margin="10" Padding="10" Grid.Row="10" Grid.Column="0" FontFamily="Montserrat" FontSize="15" Content="Proceed"></Button>
-            <Button BorderThickness="0" Click="Change" Margin="10" Padding="10" Grid.Row="12" Grid.Column="1" FontFamily="Montserrat" FontSize="15" Content="Change"></Button>
-
         </Grid>
     </Grid>
 </Window>
