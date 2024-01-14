@@ -52,7 +52,7 @@
             <Button BorderThickness="0" Click="NumOfPointsInput" Margin="10" Padding="10" Grid.Row="3" Grid.Column="1" FontFamily="Montserrat" FontSize="15" Content="Set"></Button>
             <Button BorderThickness="0" Click="X0Input" Margin="10" Padding="10" Grid.Row="5" Grid.Column="1" FontFamily="Montserrat" FontSize="15" Content="Set"></Button>
             <Button BorderThickness="0" Click="StepSizeInput" Margin="10" Padding="10" Grid.Row="7" Grid.Column="1" FontFamily="Montserrat" FontSize="15" Content="Set"></Button>
-            <Button BorderThickness="0" Click="InterpolatedPointsNumberInput" Margin="10" Padding="10" Grid.Row="9" Grid.Column="1" FontFamily="Montserrat" FontSize="15" Content="Set"></Button>
+            <Button BorderThickness="0" Click="Y0Input" Margin="10" Padding="10" Grid.Row="9" Grid.Column="1" FontFamily="Montserrat" FontSize="15" Content="Set"></Button>
             <Button BorderThickness="0" Click="Proceed" Margin="10" Padding="10" Grid.Row="10" Grid.Column="0" FontFamily="Montserrat" FontSize="15" Content="Proceed"></Button>
         </Grid>
     </Grid>

@@ -145,11 +145,11 @@ namespace PolynomialInterpolation
             }
         }
 
-        private void InterpolatedPointsNumberInput(object sender, RoutedEventArgs e)
+        private void Y0Input(object sender, RoutedEventArgs e)
         {
             try
             {
-                NumOfInterpPts = Convert.ToUInt32(yOfZero.Text, CultureInfo.InvariantCulture);
+                Y0 = Convert.ToDouble(yOfZero.Text, CultureInfo.InvariantCulture);
             }
             catch (Exception ex)
             {
