@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
@@ -11,7 +11,13 @@
     <PackageReference Include="OxyPlot.Core" Version="2.1.2" />
     <PackageReference Include="OxyPlot.Wpf" Version="2.1.2" />
     <PackageReference Include="OxyPlot.Wpf.Shared" Version="2.1.2" />
-    <PackageReference Include="xFunc.Maths" Version="4.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Lagrange\Lagrange\LagrangeInterpolation.csproj" />
+    <ProjectReference Include="..\FunctionCalculation\FunctionCalculation.csproj" />
+    <ProjectReference Include="..\MathExpressionParser\MathExpressionParser.csproj" />
+    <ProjectReference Include="..\NewtonInterpolation\NewtonInterpolation.csproj" />
   </ItemGroup>
 
 </Project>

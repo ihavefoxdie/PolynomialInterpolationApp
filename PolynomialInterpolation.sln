@@ -3,7 +3,21 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33122.133
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolynomialInterpolation", "PolynomialInterpolation\PolynomialInterpolation.csproj", "{E7D86285-1E18-4295-8186-747504F31BD7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PolynomialInterpolation", "PolynomialInterpolation\PolynomialInterpolation.csproj", "{E7D86285-1E18-4295-8186-747504F31BD7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LagrangeInterpolation", "..\Lagrange\Lagrange\LagrangeInterpolation.csproj", "{88A30624-5B1F-442C-A1A8-5D8CE6303DCC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Interpolation.Basics", "InterpolationBasics\Interpolation.Basics.csproj", "{FC63500E-AB24-4B49-9713-A812882C9FD5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NewtonInterpolation", "NewtonInterpolation\NewtonInterpolation.csproj", "{BCA069AD-095C-4DB7-B588-D0830834A754}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ChebyshevInterpolation", "ChebyshevInterpolation\ChebyshevInterpolation.csproj", "{74179912-64EB-48B3-845A-88D681D2E601}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FunctionCalculation", "FunctionCalculation\FunctionCalculation.csproj", "{6EED2B17-171E-4A2B-9BE8-385280968BFF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MathExpressionParser", "MathExpressionParser\MathExpressionParser.csproj", "{7FCD9194-053F-41F0-8579-E215F752A8B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MathExpression.Basics", "MathExpression.Basics\MathExpression.Basics.csproj", "{D0D1D757-51C2-4762-8C60-94836D31431D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +29,34 @@ Global
 		{E7D86285-1E18-4295-8186-747504F31BD7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E7D86285-1E18-4295-8186-747504F31BD7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E7D86285-1E18-4295-8186-747504F31BD7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88A30624-5B1F-442C-A1A8-5D8CE6303DCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88A30624-5B1F-442C-A1A8-5D8CE6303DCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88A30624-5B1F-442C-A1A8-5D8CE6303DCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88A30624-5B1F-442C-A1A8-5D8CE6303DCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FC63500E-AB24-4B49-9713-A812882C9FD5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FC63500E-AB24-4B49-9713-A812882C9FD5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FC63500E-AB24-4B49-9713-A812882C9FD5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FC63500E-AB24-4B49-9713-A812882C9FD5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCA069AD-095C-4DB7-B588-D0830834A754}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCA069AD-095C-4DB7-B588-D0830834A754}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCA069AD-095C-4DB7-B588-D0830834A754}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCA069AD-095C-4DB7-B588-D0830834A754}.Release|Any CPU.Build.0 = Release|Any CPU
+		{74179912-64EB-48B3-845A-88D681D2E601}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74179912-64EB-48B3-845A-88D681D2E601}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74179912-64EB-48B3-845A-88D681D2E601}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{74179912-64EB-48B3-845A-88D681D2E601}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6EED2B17-171E-4A2B-9BE8-385280968BFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6EED2B17-171E-4A2B-9BE8-385280968BFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6EED2B17-171E-4A2B-9BE8-385280968BFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6EED2B17-171E-4A2B-9BE8-385280968BFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7FCD9194-053F-41F0-8579-E215F752A8B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7FCD9194-053F-41F0-8579-E215F752A8B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7FCD9194-053F-41F0-8579-E215F752A8B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7FCD9194-053F-41F0-8579-E215F752A8B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0D1D757-51C2-4762-8C60-94836D31431D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0D1D757-51C2-4762-8C60-94836D31431D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0D1D757-51C2-4762-8C60-94836D31431D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0D1D757-51C2-4762-8C60-94836D31431D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
